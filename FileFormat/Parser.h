@@ -60,4 +60,6 @@ namespace VTFParser
 	/// <param name="pImageDataSize">Pointer to size_t that will be set to the size of the image data in bytes</param>
 	/// <returns>Whether the parse was successful</returns>
 	bool ParseImageData(const char* pData, size_t size, const VTFHeader* pHeader, char** ppImageData, uint32_t* pImageDataSize);
+
+	VTFPixel ParsePixel(const char* pPixelData, IMAGE_FORMAT format);
 }

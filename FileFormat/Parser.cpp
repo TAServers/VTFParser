@@ -152,3 +152,112 @@ bool VTFParser::ParseImageData(const char* pData, size_t size, const VTFHeader* 
 
 	return true;
 }
+
+VTFPixel VTFParser::ParsePixel(const char* pPixelData, IMAGE_FORMAT format)
+{
+	if (pPixelData == nullptr) return VTFPixel{};
+
+	switch (format) {
+	case IMAGE_FORMAT::RGBA8888:
+		return VTFPixel{
+			static_cast<uint8_t>(pPixelData[0]) / 255.f,
+			static_cast<uint8_t>(pPixelData[1]) / 255.f,
+			static_cast<uint8_t>(pPixelData[2]) / 255.f,
+			static_cast<uint8_t>(pPixelData[3]) / 255.f
+		};
+	case IMAGE_FORMAT::ABGR8888:
+		return VTFPixel{
+			static_cast<uint8_t>(pPixelData[3]) / 255.f,
+			static_cast<uint8_t>(pPixelData[2]) / 255.f,
+			static_cast<uint8_t>(pPixelData[1]) / 255.f,
+			static_cast<uint8_t>(pPixelData[0]) / 255.f
+		};
+	case IMAGE_FORMAT::RGB888_BLUESCREEN: // Can't find any distinction between this and RGB888
+	case IMAGE_FORMAT::RGB888:
+		return VTFPixel{
+			static_cast<uint8_t>(pPixelData[0]) / 255.f,
+			static_cast<uint8_t>(pPixelData[1]) / 255.f,
+			static_cast<uint8_t>(pPixelData[2]) / 255.f
+		};
+	case IMAGE_FORMAT::BGR888_BLUESCREEN: // See above
+	case IMAGE_FORMAT::BGR888:
+		return VTFPixel{
+			static_cast<uint8_t>(pPixelData[2]) / 255.f,
+			static_cast<uint8_t>(pPixelData[1]) / 255.f,
+			static_cast<uint8_t>(pPixelData[0]) / 255.f
+		};
+	case IMAGE_FORMAT::RGB565:
+		return VTFPixel{
+			static_cast<uint8_t>(pPixelData[0] & 0b11111000) / 255.f,
+			static_cast<uint8_t>(pPixelData[0] << 5 + (pPixelData[1] & 0b11100000) >> 3) / 255.f,
+			static_cast<uint8_t>((pPixelData[1] & 0b11111) << 3) / 255.f
+		};
+	case IMAGE_FORMAT::I8:
+	{
+		float intensity = static_cast<uint8_t>(pPixelData[0]) / 255.f;
+		return VTFPixel{ intensity, intensity, intensity };
+	}
+	case IMAGE_FORMAT::IA88:
+	{
+		float intensity = static_cast<uint8_t>(pPixelData[0]) / 255.f;
+		return VTFPixel{
+			intensity, intensity, intensity,
+			static_cast<uint8_t>(pPixelData[1]) / 255.f
+		};
+	}
+	//case IMAGE_FORMAT::P8: Not currently supported
+	case IMAGE_FORMAT::A8:
+		return VTFPixel{ 0, 0, 0, static_cast<uint8_t>(pPixelData[0]) / 255.f };
+	case IMAGE_FORMAT::ARGB8888:
+		return VTFPixel{
+			static_cast<uint8_t>(pPixelData[1]) / 255.f,
+			static_cast<uint8_t>(pPixelData[2]) / 255.f,
+			static_cast<uint8_t>(pPixelData[3]) / 255.f,
+			static_cast<uint8_t>(pPixelData[0]) / 255.f
+		};
+	case IMAGE_FORMAT::BGRX8888: // Can't find any difference between this and BGRA8888
+	case IMAGE_FORMAT::BGRA8888:
+		return VTFPixel{
+			static_cast<uint8_t>(pPixelData[2]) / 255.f,
+			static_cast<uint8_t>(pPixelData[1]) / 255.f,
+			static_cast<uint8_t>(pPixelData[0]) / 255.f,
+			static_cast<uint8_t>(pPixelData[3]) / 255.f
+		};
+	// DXT1 through 5 should be decompressed on read
+	case IMAGE_FORMAT::BGR565:
+		return VTFPixel{
+			static_cast<uint8_t>((pPixelData[1] & 0b11111) << 3) / 255.f,
+			static_cast<uint8_t>(pPixelData[0] << 5 + (pPixelData[1] & 0b11100000) >> 3) / 255.f,
+			static_cast<uint8_t>(pPixelData[0] & 0b11111000) / 255.f
+		};
+	case IMAGE_FORMAT::BGRX5551:
+	case IMAGE_FORMAT::BGRA5551:
+		return VTFPixel{
+			static_cast<uint8_t>((pPixelData[1] & 0b00111110) << 2) / 255.f,
+			static_cast<uint8_t>(pPixelData[0] << 5 + (pPixelData[1] & 0b11000000) >> 3) / 255.f,
+			static_cast<uint8_t>(pPixelData[0] & 0b11111000) / 255.f,
+			static_cast<float>(pPixelData[1] & 0b1)
+		};
+	case IMAGE_FORMAT::BGRA4444:
+		return VTFPixel{
+			static_cast<uint8_t>(pPixelData[1] & 0b11110000) / 255.f,
+			static_cast<uint8_t>(pPixelData[0] << 4) / 255.f,
+			static_cast<uint8_t>(pPixelData[0] & 0b11110000) / 255.f,
+			static_cast<uint8_t>(pPixelData[1] << 4) / 255.f
+		};
+	// Not currently supported (not even sure what these formats are used for)
+	//case IMAGE_FORMAT::UV88:
+	//case IMAGE_FORMAT::UVWQ8888:
+	//case IMAGE_FORMAT::UVLX8888:
+	case IMAGE_FORMAT::RGBA16161616:
+	case IMAGE_FORMAT::RGBA16161616F: // These 2 formats are stored IDENTICALLY in the VTF, even though VTFEdit displays them differently (float version has incorrect colours)
+		return VTFPixel{
+			static_cast<float>(*reinterpret_cast<const uint16_t*>(pPixelData)) / static_cast<float>(UINT16_MAX),
+			static_cast<float>(*reinterpret_cast<const uint16_t*>(pPixelData + 2)) / static_cast<float>(UINT16_MAX),
+			static_cast<float>(*reinterpret_cast<const uint16_t*>(pPixelData + 4)) / static_cast<float>(UINT16_MAX),
+			static_cast<float>(*reinterpret_cast<const uint16_t*>(pPixelData + 6)) / static_cast<float>(UINT16_MAX)
+		};
+	default:
+		return VTFPixel{};
+	}
+}
