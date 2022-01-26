@@ -2,12 +2,8 @@
 #include "FileFormat/Parser.h"
 #include "DXTn/DXTn.h"
 
-#include <exception>
+#include <stdexcept>
 
-#include <iostream>
-#include <fstream>
-#include <filesystem>
-#include <string>
 
 VTFTexture::VTFTexture(const uint8_t* pData, size_t size, bool headerOnly)
 {
