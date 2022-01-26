@@ -1,6 +1,3 @@
-workspace("VTFParser")
-configurations({"Debug", "Release"})
-
 project("VTFParser")
 kind("StaticLib")
 language("C++")
