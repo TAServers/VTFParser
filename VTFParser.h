@@ -8,7 +8,7 @@ class VTFTexture
 {
 private:
 	VTFHeader* mpHeader;
-	char* mpImageData;
+	uint8_t* mpImageData;
 	uint32_t mImageDataSize = 0;
 
 	bool mIsValid = false;
@@ -20,7 +20,7 @@ public:
 	/// <param name="pData">Pointer to char buffer that represents a VTF image</param>
 	/// <param name="size">Size of the buffer</param>
 	/// <param name="headerOnly">Whether to just parse the header or not (default: false)</param>
-	VTFTexture(const char* pData, size_t size, bool headerOnly = false);
+	VTFTexture(const uint8_t* pData, size_t size, bool headerOnly = false);
 	~VTFTexture();
 
 	/// <summary>

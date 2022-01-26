@@ -48,7 +48,7 @@ namespace VTFParser
 	/// <param name="size">Size of the data in bytes</param>
 	/// <param name="pHeader">Pointer to header struct to populate</param>
 	/// <returns>Whether the parse was successful</returns>
-	bool ParseHeader(const char* pData, size_t size, VTFHeader* pHeader);
+	bool ParseHeader(const uint8_t* pData, size_t size, VTFHeader* pHeader);
 
 	/// <summary>
 	/// Parses the high resolution image data of a VTF
@@ -59,7 +59,7 @@ namespace VTFParser
 	/// <param name="pImageData">Pointer to char* that will be set to the image data</param>
 	/// <param name="pImageDataSize">Pointer to size_t that will be set to the size of the image data in bytes</param>
 	/// <returns>Whether the parse was successful</returns>
-	bool ParseImageData(const char* pData, size_t size, const VTFHeader* pHeader, char** ppImageData, uint32_t* pImageDataSize);
+	bool ParseImageData(const uint8_t* pData, size_t size, const VTFHeader* pHeader, uint8_t** ppImageData, uint32_t* pImageDataSize);
 
-	VTFPixel ParsePixel(const char* pPixelData, IMAGE_FORMAT format);
+	VTFPixel ParsePixel(const uint8_t* pPixelData, IMAGE_FORMAT format);
 }
