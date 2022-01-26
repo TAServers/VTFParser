@@ -4,7 +4,6 @@
 
 #include <stdexcept>
 
-
 VTFTexture::VTFTexture(const uint8_t* pData, size_t size, bool headerOnly)
 {
 	mpImageData = nullptr;
