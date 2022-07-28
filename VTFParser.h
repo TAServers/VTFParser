@@ -21,7 +21,14 @@ public:
 	/// <param name="size">Size of the buffer</param>
 	/// <param name="headerOnly">Whether to just parse the header or not (default: false)</param>
 	VTFTexture(const uint8_t* pData, size_t size, bool headerOnly = false);
+
 	~VTFTexture();
+
+	/// <summary>
+	/// Copy constructor
+	/// </summary>
+	/// <param name="src">Texture to copy</param>
+	VTFTexture(const VTFTexture& src);
 
 	/// <summary>
 	/// Returns whether or not the image is valid

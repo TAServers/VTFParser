@@ -84,6 +84,19 @@ VTFTexture::VTFTexture(const uint8_t* pData, size_t size, bool headerOnly)
 	}
 }
 
+VTFTexture::VTFTexture(const VTFTexture& src)
+{
+	mpHeader = new VTFHeader;
+	memcpy(mpHeader, src.mpHeader, sizeof(VTFHeader));
+
+	if (src.mIsValid) {
+		mImageDataSize = src.mImageDataSize;
+		mpImageData = static_cast<uint8_t*>(malloc(mImageDataSize));
+		memcpy(mpImageData, src.mpImageData, mImageDataSize);
+		mIsValid = true;
+	}
+}
+
 VTFTexture::~VTFTexture()
 {
 	delete mpHeader;
