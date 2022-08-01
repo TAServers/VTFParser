@@ -190,7 +190,7 @@ VTFPixel VTFParser::ParsePixel(const uint8_t* pPixelData, IMAGE_FORMAT format)
 	case IMAGE_FORMAT::RGB565:
 		return VTFPixel{
 			(pPixelData[0] & 0b11111000) / 255.f,
-			(pPixelData[0] << 5 + (pPixelData[1] & 0b11100000) >> 3) / 255.f,
+			((pPixelData[0] << 5) + ((pPixelData[1] & 0b11100000) >> 3)) / 255.f,
 			((pPixelData[1] & 0b11111) << 3) / 255.f
 		};
 	case IMAGE_FORMAT::I8:
@@ -228,14 +228,14 @@ VTFPixel VTFParser::ParsePixel(const uint8_t* pPixelData, IMAGE_FORMAT format)
 	case IMAGE_FORMAT::BGR565:
 		return VTFPixel{
 			((pPixelData[1] & 0b11111) << 3) / 255.f,
-			(pPixelData[0] << 5 + (pPixelData[1] & 0b11100000) >> 3) / 255.f,
+			((pPixelData[0] << 5) + ((pPixelData[1] & 0b11100000) >> 3)) / 255.f,
 			(pPixelData[0] & 0b11111000) / 255.f
 		};
 	case IMAGE_FORMAT::BGRX5551:
 	case IMAGE_FORMAT::BGRA5551:
 		return VTFPixel{
 			((pPixelData[1] & 0b00111110) << 2) / 255.f,
-			(pPixelData[0] << 5 + (pPixelData[1] & 0b11000000) >> 3) / 255.f,
+			((pPixelData[0] << 5) + ((pPixelData[1] & 0b11000000) >> 3)) / 255.f,
 			(pPixelData[0] & 0b11111000) / 255.f,
 			static_cast<float>(pPixelData[1] & 0b1)
 		};
