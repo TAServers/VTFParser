@@ -3,6 +3,7 @@
 #include "DXTn/DXTn.h"
 
 #include <stdexcept>
+#include <cmath>
 
 VTFTexture::VTFTexture(const uint8_t* pData, size_t size, bool headerOnly)
 {
@@ -59,7 +60,9 @@ VTFTexture::VTFTexture(const uint8_t* pData, size_t size, bool headerOnly)
 							DXTn::DecompressDXT5(pCompressedImageData + compOffset, mpImageData + uncompOffset, width, height);
 							break;
 						default:
-							throw std::runtime_error("Unknown compressed format!");
+							mIsValid = false;
+							free(pCompressedImageData);
+							return;
 						}
 
 						compOffset += VTFParser::CalcImageSize(width, height, 1, mpHeader->highResImageFormat);
@@ -189,4 +192,98 @@ VTFPixel VTFTexture::GetPixel(uint16_t x, uint16_t y, uint8_t mipLevel, uint16_t
 VTFPixel VTFTexture::GetPixel(uint16_t x, uint16_t y, uint8_t mipLevel) const
 {
 	return GetPixel(x, y, mipLevel, 0);
+}
+
+VTFPixel VTFTexture::Sample(float u, float v, uint16_t z, uint8_t mipLevel, uint16_t frame, uint8_t face) const
+{
+	if (!IsValid()) return VTFPixel{};
+
+	// Image data offset
+	uint32_t offset = 0;
+
+	uint16_t width = mpHeader->width >> mipLevel;
+	uint16_t height = mpHeader->height >> mipLevel;
+	uint16_t depth = mpHeader->depth >> mipLevel;
+
+	for (uint8_t i = mipLevel + 1; i < mpHeader->mipmapCount; i++) {
+		width >>= 1;
+		height >>= 1;
+		depth >>= 1;
+
+		if (width < 1)  width = 1;
+		if (height < 1) height = 1;
+		if (depth < 1)  depth = 1;
+
+		offset += VTFParser::CalcImageSize(width, height, depth, mpHeader->highResImageFormat);
+	}
+
+	width = mpHeader->width >> mipLevel;
+	height = mpHeader->height >> mipLevel;
+	depth = mpHeader->depth >> mipLevel;
+
+	uint32_t pixelSize = VTFParser::GetImageFormatInfo(mpHeader->highResImageFormat).bytesPerPixel;
+	uint32_t sliceSize = width * height * pixelSize;
+	uint32_t faceSize = sliceSize * depth;
+	uint32_t frameSize = faceSize * VTFParser::GetFaceCount(mpHeader);
+	offset += frame * frameSize + face * faceSize + z * sliceSize;// +y * width * pixelSize + x * pixelSize;
+
+	VTFPixel filtered{};
+
+	// Remap to 0-1
+	u -= floorf(u);
+	v -= floorf(v);
+
+	// Remap to pixel centres
+	u = u * width - 0.5f;
+	v = v * height - 0.5f;
+
+	// Floor to nearest pixel
+	int x = floorf(u);
+	int y = floorf(v);
+
+	// Calculate fractional coordinate and inverse
+	float uFract = u - x;
+	float vFract = v - y;
+	float uFractInv = 1.f - uFract;
+	float vFractInv = 1.f - vFract;
+
+	VTFPixel corners[2][2];
+	for (int xOff = 0; xOff < 2; xOff++) {
+		for (int yOff = 0; yOff < 2; yOff++) {
+			int xCorner = x + xOff, yCorner = y + yOff;
+			xCorner = xCorner < 0 ? xCorner + width : xCorner;
+			xCorner = xCorner >= width ? xCorner - width : xCorner;
+			yCorner = yCorner < 0 ? yCorner + height : yCorner;
+			yCorner = yCorner >= height ? yCorner - height : yCorner;
+
+			corners[xOff][yOff] = VTFParser::ParsePixel(
+				mpImageData + offset + yCorner * width * pixelSize + xCorner * pixelSize,
+				mpHeader->highResImageFormat
+			);
+		}
+	}
+
+	return VTFPixel{
+		(corners[0][0].r * uFractInv + corners[1][0].r * uFract) * vFractInv +
+		(corners[0][1].r * uFractInv + corners[1][1].r * uFract) * vFract,
+
+		(corners[0][0].g * uFractInv + corners[1][0].g * uFract)* vFractInv +
+		(corners[0][1].g * uFractInv + corners[1][1].g * uFract) * vFract,
+
+		(corners[0][0].b * uFractInv + corners[1][0].b * uFract)* vFractInv +
+		(corners[0][1].b * uFractInv + corners[1][1].b * uFract) * vFract,
+
+		(corners[0][0].a * uFractInv + corners[1][0].a * uFract)* vFractInv +
+		(corners[0][1].a * uFractInv + corners[1][1].a * uFract) * vFract,
+	};
+}
+
+VTFPixel VTFTexture::Sample(float u, float v, uint8_t mipLevel, uint16_t frame) const
+{
+	return Sample(u, v, 0, mipLevel, frame, 0);
+}
+
+VTFPixel VTFTexture::Sample(float u, float v, uint8_t mipLevel) const
+{
+	return Sample(u, v, mipLevel, 0);
 }

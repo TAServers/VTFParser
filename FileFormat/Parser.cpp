@@ -246,10 +246,21 @@ VTFPixel VTFParser::ParsePixel(const uint8_t* pPixelData, IMAGE_FORMAT format)
 			(pPixelData[0] & 0b11110000) / 255.f,
 			(pPixelData[1] << 4) / 255.f
 		};
-	// Not currently supported (not even sure what these formats are used for)
-	//case IMAGE_FORMAT::UV88:
-	//case IMAGE_FORMAT::UVWQ8888:
-	//case IMAGE_FORMAT::UVLX8888:
+	// While researching bsp water materials, UV88 is actually for archaic DirectX 8 du/dv maps (instead of using normals for refraction)
+	// However im not sure how the other formats are meant to be used, but I'll add cases anyway
+	case IMAGE_FORMAT::UV88:
+		return VTFPixel{
+			pPixelData[0] / 255.f,
+			pPixelData[1] / 255.f
+		};
+	case IMAGE_FORMAT::UVWQ8888:
+	case IMAGE_FORMAT::UVLX8888:
+		return VTFPixel{
+			pPixelData[0] / 255.f,
+			pPixelData[1] / 255.f,
+			pPixelData[2] / 255.f,
+			pPixelData[3] / 255.f
+		};
 	case IMAGE_FORMAT::RGBA16161616:
 	case IMAGE_FORMAT::RGBA16161616F: // These 2 formats are stored IDENTICALLY in the VTF, even though VTFEdit displays them differently (float version has incorrect colours)
 		return VTFPixel{
