@@ -4,6 +4,7 @@
 
 #include <stdexcept>
 #include <cmath>
+#include <algorithm>
 
 VTFTexture::VTFTexture(const uint8_t* pData, size_t size, bool headerOnly)
 {
@@ -194,7 +195,7 @@ VTFPixel VTFTexture::GetPixel(uint16_t x, uint16_t y, uint8_t mipLevel) const
 	return GetPixel(x, y, mipLevel, 0);
 }
 
-VTFPixel VTFTexture::Sample(float u, float v, uint16_t z, uint8_t mipLevel, uint16_t frame, uint8_t face) const
+VTFPixel VTFTexture::SampleBilinear(float u, float v, uint16_t z, uint8_t mipLevel, uint16_t frame, uint8_t face) const
 {
 	if (!IsValid()) return VTFPixel{};
 
@@ -278,12 +279,33 @@ VTFPixel VTFTexture::Sample(float u, float v, uint16_t z, uint8_t mipLevel, uint
 	};
 }
 
-VTFPixel VTFTexture::Sample(float u, float v, uint8_t mipLevel, uint16_t frame) const
+VTFPixel VTFTexture::Sample(float u, float v, uint16_t z, float mipLevel, uint16_t frame, uint8_t face) const
+{
+	mipLevel = std::clamp(mipLevel, 0.f, static_cast<float>(mpHeader->mipmapCount - 1));
+	float mipHigh = floorf(mipLevel), mipLow = ceilf(mipLevel);
+
+	VTFPixel high = SampleBilinear(u, v, z, mipHigh, frame, face);
+	if (mipLow == mipHigh) return high;
+
+	VTFPixel low = SampleBilinear(u, v, z, mipHigh, frame, face);
+
+	float fract = mipLevel - mipHigh;
+	float fractInv = 1.f - fract;
+
+	return VTFPixel{
+		low.r * fract + high.r * fractInv,
+		low.g * fract + high.g * fractInv,
+		low.b * fract + high.b * fractInv,
+		low.a * fract + high.a * fractInv
+	};
+}
+
+VTFPixel VTFTexture::Sample(float u, float v, float mipLevel, uint16_t frame) const
 {
 	return Sample(u, v, 0, mipLevel, frame, 0);
 }
 
-VTFPixel VTFTexture::Sample(float u, float v, uint8_t mipLevel) const
+VTFPixel VTFTexture::Sample(float u, float v, float mipLevel) const
 {
 	return Sample(u, v, mipLevel, 0);
 }
