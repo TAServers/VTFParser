@@ -185,16 +185,6 @@ VTFPixel VTFTexture::GetPixel(uint16_t x, uint16_t y, uint16_t z, uint8_t mipLev
 	return VTFParser::ParsePixel(mpImageData + offset, mpHeader->highResImageFormat);
 }
 
-VTFPixel VTFTexture::GetPixel(uint16_t x, uint16_t y, uint8_t mipLevel, uint16_t frame) const
-{
-	return GetPixel(x, y, 0, mipLevel, frame, 0);
-}
-
-VTFPixel VTFTexture::GetPixel(uint16_t x, uint16_t y, uint8_t mipLevel) const
-{
-	return GetPixel(x, y, mipLevel, 0);
-}
-
 VTFPixel VTFTexture::SampleBilinear(float u, float v, uint16_t z, uint8_t mipLevel, uint16_t frame, uint8_t face) const
 {
 	if (!IsValid()) return VTFPixel{};
@@ -299,14 +289,4 @@ VTFPixel VTFTexture::Sample(float u, float v, uint16_t z, float mipLevel, uint16
 		low.b * fract + high.b * fractInv,
 		low.a * fract + high.a * fractInv
 	};
-}
-
-VTFPixel VTFTexture::Sample(float u, float v, float mipLevel, uint16_t frame) const
-{
-	return Sample(u, v, 0, mipLevel, frame, 0);
-}
-
-VTFPixel VTFTexture::Sample(float u, float v, float mipLevel) const
-{
-	return Sample(u, v, mipLevel, 0);
 }

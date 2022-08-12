@@ -88,7 +88,10 @@ public:
 	/// <param name="mipLevel">MIP level to read (automatically transforms above coordinates)</param>
 	/// <param name="frame">Frame of the image</param>
 	/// <returns>VTFPixel struct with the pixel data</returns>
-	VTFPixel GetPixel(uint16_t x, uint16_t y, uint8_t mipLevel, uint16_t frame) const;
+	inline VTFPixel GetPixel(uint16_t x, uint16_t y, uint8_t mipLevel, uint16_t frame) const
+	{
+		return GetPixel(x, y, 0, mipLevel, frame, 0);
+	}
 
 	/// <summary>
 	/// Gets a pixel from the image at the specified coordinate and MIP level of a standard 2D texture
@@ -97,7 +100,10 @@ public:
 	/// <param name="y">Coordinate of the pixel on the y axis</param>
 	/// <param name="mipLevel">MIP level to read (automatically transforms above coordinates)</param>
 	/// <returns>VTFPixel struct with the pixel data</returns>
-	VTFPixel GetPixel(uint16_t x, uint16_t y, uint8_t mipLevel) const;
+	inline VTFPixel GetPixel(uint16_t x, uint16_t y, uint8_t mipLevel) const
+	{
+		return GetPixel(x, y, mipLevel, 0);
+	}
 
 	/// <summary>
 	/// Samples the texture at a given uv and performs filtering
@@ -119,7 +125,10 @@ public:
 	/// <param name="mipLevel">MIP level to read</param>
 	/// <param name="face">Face of the image (envmaps only)</param>
 	/// <returns>VTFPixel struct with the pixel data</returns>
-	VTFPixel Sample(float u, float v, float mipLevel, uint16_t frame) const;
+	inline VTFPixel Sample(float u, float v, float mipLevel, uint16_t frame) const
+	{
+		return Sample(u, v, 0, mipLevel, frame, 0);
+	}
 
 	/// <summary>
 	/// Samples the texture at a given uv and performs filtering
@@ -128,5 +137,8 @@ public:
 	/// <param name="v">V coordinate</param>
 	/// <param name="mipLevel">MIP level to read</param>
 	/// <returns>VTFPixel struct with the pixel data</returns>
-	VTFPixel Sample(float u, float v, float mipLevel) const;
+	inline VTFPixel Sample(float u, float v, float mipLevel) const
+	{
+		return Sample(u, v, mipLevel, 0);
+	}
 };
