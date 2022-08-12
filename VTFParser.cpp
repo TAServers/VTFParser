@@ -206,6 +206,7 @@ VTFPixel VTFTexture::SampleBilinear(float u, float v, uint16_t z, uint8_t mipLev
 	uint16_t height = mpHeader->height >> mipLevel;
 	uint16_t depth = mpHeader->depth >> mipLevel;
 
+	// TODO: Cache these mip offsets on image load and perform a lookup here
 	for (uint8_t i = mipLevel + 1; i < mpHeader->mipmapCount; i++) {
 		width >>= 1;
 		height >>= 1;
@@ -287,7 +288,7 @@ VTFPixel VTFTexture::Sample(float u, float v, uint16_t z, float mipLevel, uint16
 	VTFPixel high = SampleBilinear(u, v, z, mipHigh, frame, face);
 	if (mipLow == mipHigh) return high;
 
-	VTFPixel low = SampleBilinear(u, v, z, mipHigh, frame, face);
+	VTFPixel low = SampleBilinear(u, v, z, mipLow, frame, face);
 
 	float fract = mipLevel - mipHigh;
 	float fractInv = 1.f - fract;
