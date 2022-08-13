@@ -5,6 +5,14 @@
 
 #define VTF_MAX_RESOURCES 32
 
+#if defined(__GNUC__) || defined(__clang__)
+#  define ALIGN(x) __attribute__ ((aligned(x)))
+#elif defined(_MSC_VER)
+#  define ALIGN(x) __declspec(align(x))
+#else
+#  error "Unknown compiler, can't define ALIGN"
+#endif
+
 #pragma pack(1)
 
 /// <summary>
@@ -20,7 +28,7 @@ struct VTFHeaderBase
 /// <summary>
 /// Aligned full header (only for alignment reasons, do not use outside of VTFHeader declaration)
 /// </summary>
-__declspec(align(16)) struct VTFHeaderFullAligned : public VTFHeaderBase
+struct ALIGN(16) VTFHeaderFullAligned : public VTFHeaderBase
 {
 	uint16_t     width;              // Width of the largest mipmap in pixels. Must be a power of 2.
 	uint16_t     height;             // Height of the largest mipmap in pixels. Must be a power of 2.
