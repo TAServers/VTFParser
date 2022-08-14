@@ -6,6 +6,10 @@
 #include <cmath>
 #include <algorithm>
 
+inline int intmod(int a, int b) {
+	return (a % b + b) % b;
+}
+
 VTFTexture::VTFTexture(const uint8_t* pData, size_t size, bool headerOnly)
 {
 	mpImageData = nullptr;
@@ -176,6 +180,10 @@ VTFPixel VTFTexture::GetPixel(uint16_t x, uint16_t y, uint16_t z, uint8_t mipLev
 	height = mpHeader->height >> mipLevel;
 	depth = mpHeader->depth >> mipLevel;
 
+	if (width < 1)  width = 1;
+	if (height < 1) height = 1;
+	if (depth < 1)  depth = 1;
+
 	uint32_t pixelSize = VTFParser::GetImageFormatInfo(mpHeader->highResImageFormat).bytesPerPixel;
 	uint32_t sliceSize = width * height * pixelSize;
 	uint32_t faceSize = sliceSize * depth;
@@ -213,6 +221,10 @@ VTFPixel VTFTexture::SampleBilinear(float u, float v, uint16_t z, uint8_t mipLev
 	height = mpHeader->height >> mipLevel;
 	depth = mpHeader->depth >> mipLevel;
 
+	if (width < 1)  width = 1;
+	if (height < 1) height = 1;
+	if (depth < 1)  depth = 1;
+
 	uint32_t pixelSize = VTFParser::GetImageFormatInfo(mpHeader->highResImageFormat).bytesPerPixel;
 	uint32_t sliceSize = width * height * pixelSize;
 	uint32_t faceSize = sliceSize * depth;
@@ -243,10 +255,8 @@ VTFPixel VTFTexture::SampleBilinear(float u, float v, uint16_t z, uint8_t mipLev
 	for (int xOff = 0; xOff < 2; xOff++) {
 		for (int yOff = 0; yOff < 2; yOff++) {
 			int xCorner = x + xOff, yCorner = y + yOff;
-			xCorner = xCorner < 0 ? xCorner + width : xCorner;
-			xCorner = xCorner >= width ? xCorner - width : xCorner;
-			yCorner = yCorner < 0 ? yCorner + height : yCorner;
-			yCorner = yCorner >= height ? yCorner - height : yCorner;
+			xCorner = intmod(xCorner, width);
+			yCorner = intmod(yCorner, height);
 
 			corners[xOff][yOff] = VTFParser::ParsePixel(
 				mpImageData + offset + yCorner * width * pixelSize + xCorner * pixelSize,
