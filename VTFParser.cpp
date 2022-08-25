@@ -128,15 +128,21 @@ uint32_t VTFTexture::GetVersionMinor() const
 
 uint16_t VTFTexture::GetWidth(uint8_t mipLevel) const
 {
-	return IsValid() ? mpHeader->width >> mipLevel : 0;
+	uint16_t width = mpHeader->width >> mipLevel;
+	if (width < 1) width = 1;
+	return IsValid() ? width : 0;
 }
 uint16_t VTFTexture::GetHeight(uint8_t mipLevel) const
 {
-	return IsValid() ? mpHeader->height >> mipLevel : 0;
+	uint16_t height = mpHeader->height >> mipLevel;
+	if (height < 1) height = 1;
+	return IsValid() ? height : 0;
 }
 uint16_t VTFTexture::GetDepth(uint8_t mipLevel) const
 {
-	return IsValid() ? mpHeader->depth >> mipLevel : 0;
+	uint16_t depth = mpHeader->depth >> mipLevel;
+	if (depth < 1) depth = 1;
+	return IsValid() ? depth : 0;
 }
 
 uint8_t VTFTexture::GetFaces() const
