@@ -139,6 +139,11 @@ uint16_t VTFTexture::GetDepth(uint8_t mipLevel) const
 	return IsValid() ? mpHeader->depth >> mipLevel : 0;
 }
 
+uint8_t VTFTexture::GetFaces() const
+{
+	return IsValid() ? VTFParser::GetFaceCount(mpHeader) : 0;
+}
+
 uint16_t VTFTexture::GetMIPLevels() const
 {
 	return IsValid() ? mpHeader->mipmapCount : 0;
@@ -173,7 +178,7 @@ VTFPixel VTFTexture::GetPixel(uint16_t x, uint16_t y, uint16_t z, uint8_t mipLev
 		if (height < 1) height = 1;
 		if (depth < 1)  depth = 1;
 
-		offset += VTFParser::CalcImageSize(width, height, depth, mpHeader->highResImageFormat);
+		offset += VTFParser::CalcImageSize(width, height, depth, mpHeader->highResImageFormat) * VTFParser::GetFaceCount(mpHeader) * mpHeader->frames;
 	}
 
 	width = mpHeader->width >> mipLevel;
@@ -214,7 +219,7 @@ VTFPixel VTFTexture::SampleBilinear(float u, float v, uint16_t z, uint8_t mipLev
 		if (height < 1) height = 1;
 		if (depth < 1)  depth = 1;
 
-		offset += VTFParser::CalcImageSize(width, height, depth, mpHeader->highResImageFormat);
+		offset += VTFParser::CalcImageSize(width, height, depth, mpHeader->highResImageFormat) * VTFParser::GetFaceCount(mpHeader) * mpHeader->frames;
 	}
 
 	width = mpHeader->width >> mipLevel;

@@ -63,6 +63,12 @@ public:
 	/// <returns>Depth of the image in pixels</returns>
 	uint16_t GetDepth(uint8_t mipLevel = 0) const;
 
+	/// <summary>
+	/// Gets the number of faces in an image
+	/// </summary>
+	/// <returns>6/7 for envmaps depending on version, 1 for anything else</returns>
+	uint8_t GetFaces() const;
+
 	uint16_t GetMIPLevels() const;
 
 	uint16_t GetFrames() const;
