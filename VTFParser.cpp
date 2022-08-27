@@ -244,9 +244,19 @@ VTFPixel VTFTexture::SampleBilinear(float u, float v, uint16_t z, uint8_t mipLev
 
 	VTFPixel filtered{};
 
+	bool clampX = (mpHeader->flags & static_cast<uint32_t>(TEXTURE_FLAGS::CLAMPS)) != 0;
+	bool clampY = (mpHeader->flags & static_cast<uint32_t>(TEXTURE_FLAGS::CLAMPT)) != 0;
+
 	// Remap to 0-1
-	u -= floorf(u);
-	v -= floorf(v);
+	if (clampX)
+		u = std::clamp(u, 0.f, 0.9999f);
+	else
+		u -= floorf(u);
+
+	if (clampY)
+		v = std::clamp(v, 0.f, 0.9999f);
+	else
+		v -= floorf(v);
 
 	// Remap to pixel centres
 	u = u * width - 0.5f;
@@ -266,8 +276,15 @@ VTFPixel VTFTexture::SampleBilinear(float u, float v, uint16_t z, uint8_t mipLev
 	for (int xOff = 0; xOff < 2; xOff++) {
 		for (int yOff = 0; yOff < 2; yOff++) {
 			int xCorner = x + xOff, yCorner = y + yOff;
-			xCorner = intmod(xCorner, width);
-			yCorner = intmod(yCorner, height);
+			if (clampX)
+				xCorner = std::clamp(xCorner, 0, static_cast<int>(width) - 1);
+			else
+				xCorner = intmod(xCorner, width);
+
+			if (clampY)
+				yCorner = std::clamp(yCorner, 0, static_cast<int>(height) - 1);
+			else
+				yCorner = intmod(yCorner, height);
 
 			corners[xOff][yOff] = VTFParser::ParsePixel(
 				mpImageData + offset + yCorner * width * pixelSize + xCorner * pixelSize,
