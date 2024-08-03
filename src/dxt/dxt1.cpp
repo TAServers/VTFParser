@@ -10,7 +10,7 @@
 
 namespace VtfParser::Dxt {
   std::vector<Colour<4, uint8_t>> decompressDxt1(
-    const std::weak_ptr<std::vector<std::byte>>& src, size_t width, size_t height
+    const std::weak_ptr<std::vector<std::byte>>& src, const size_t width, const size_t height
   ) {
     auto dataView = OffsetDataView(src);
     std::array<Colour8888, 4> colours;
@@ -59,8 +59,9 @@ namespace VtfParser::Dxt {
 
         uint32_t pixelIndex = 0;
         for (uint32_t yOffset = 0; yOffset < 4; yOffset++) {
+          const uint32_t yDest = ySource + yOffset;
+
           for (uint32_t xOffset = 0; xOffset < 4; xOffset++) {
-            const uint32_t yDest = ySource + yOffset;
             const uint32_t xDest = xSource + xOffset;
             const uint32_t colourIndex = (bitmask & (0x03u << pixelIndex * 2u)) >> pixelIndex * 2u;
 

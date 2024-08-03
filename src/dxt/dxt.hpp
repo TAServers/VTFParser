@@ -14,7 +14,9 @@ namespace VtfParser::Dxt {
     const std::weak_ptr<std::vector<std::byte>>& src, uint32_t width, uint32_t height
   );
 
-  void decompressDxt3(uint8_t* src, uint8_t* dst, uint32_t width, uint32_t height);
+  std::vector<Colour<4, uint8_t>> decompressDxt3(
+    const std::weak_ptr<std::vector<std::byte>>& src, const size_t width, const size_t height
+  );
 
   void decompressDxt5(uint8_t* src, uint8_t* dst, uint32_t width, uint32_t height);
 }

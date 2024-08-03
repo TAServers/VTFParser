@@ -40,7 +40,7 @@ namespace VtfParser::Dxt {
 
   // DXTn Alpha block types
   struct DXTAlphaBlockExplicit {
-    std::array<int16_t, 4> row;
+    std::array<uint16_t, 4> row;
   };
 
   struct DXTAlphaBlock3BitLinear {
