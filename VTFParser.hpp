@@ -1,3 +1,8 @@
 ﻿#pragma once
 
-#include "vtf.hpp"
+/**
+ * Namespace containing all VtfParser classes and functions.
+ */
+namespace VtfParser {}
+
+#include "src/vtf.hpp"
