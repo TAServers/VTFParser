@@ -12,7 +12,6 @@
 namespace VtfParser::Errors {
   enum class Reason : uint8_t {
     InvalidHeader,
-    InvalidBody,
     UnsupportedVersion,
     OutOfBoundsAccess,
   };
@@ -30,7 +29,6 @@ namespace VtfParser::Errors {
   };
 
   ERROR_FOR_REASON(InvalidHeader);
-  ERROR_FOR_REASON(InvalidBody);
   ERROR_FOR_REASON(UnsupportedVersion);
   ERROR_FOR_REASON(OutOfBoundsAccess);
 }
