@@ -12,14 +12,35 @@ namespace VtfParser {
    */
   class Vtf {
   public:
+    /**
+     * Extents of the low resolution (thumbnail) image.
+     */
     struct LowResImageExtent {
+      /**
+       * Width of the image in pixels.
+       */
       uint8_t width;
+      /**
+       * Height of the image in pixels.
+       */
       uint8_t height;
     };
 
+    /**
+     * Extents of the high resolution image.
+     */
     struct HighResImageExtent {
+      /**
+       * Width of the image in pixels.
+       */
       uint16_t width;
+      /**
+       * Height of the image in pixels.
+       */
       uint16_t height;
+      /**
+       * Depth of the image in pixels. Will be 1 unless the texture is volumetric.
+       */
       uint16_t depth;
     };
 
