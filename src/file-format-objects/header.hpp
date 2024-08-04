@@ -41,7 +41,7 @@ namespace VtfParser {
     /**
      * VTF flags.
      */
-    uint32_t flags;
+    TextureFlags flags;
     /**
      * Number of frames, if animated (1 for no animation).
      */

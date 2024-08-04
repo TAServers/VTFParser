@@ -35,6 +35,7 @@ namespace VtfParser {
   };
 
   enum class TextureFlags : uint32_t {
+    NONE = 0,
     POINTSAMPLE = 0x00000001,
     TRILINEAR = 0x00000002,
     CLAMPS = 0x00000004,
@@ -77,4 +78,10 @@ namespace VtfParser {
     UNUSED_40000000 = 0x40000000,
     UNUSED_80000000 = 0x80000000
   };
+  inline TextureFlags operator&(const TextureFlags& a, const TextureFlags& b) {
+    return static_cast<TextureFlags>(static_cast<uint8_t>(a) & static_cast<uint8_t>(b));
+  }
+  inline TextureFlags operator|(const TextureFlags& a, const TextureFlags& b) {
+    return static_cast<TextureFlags>(static_cast<uint8_t>(a) & static_cast<uint8_t>(b));
+  }
 }
