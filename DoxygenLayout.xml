@@ -4,7 +4,7 @@
 	<!-- Navigation index tabs for HTML output -->
 	<navindex>
 		<tab type="mainpage" visible="yes" title=""/>
-		<tab type="pages" visible="yes" title="" intro=""/>
+		<tab type="pages" visible="no" title="" intro=""/>
 		<tab type="user" url="@ref VtfParser::Vtf" title="VTF Parser"/>
 		<tab type="usergroup" url="[none]" title="Enums">
 			<tab type="user" url="@ref VtfParser::ImageFormat" title="Image Formats"/>
