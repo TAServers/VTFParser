@@ -46,7 +46,6 @@ namespace VtfParser {
 
     /**
      * Loads the VTF given by the binary data into an easily accessible structure.
-     * @remark Very little parsing needs to be done in order to access VTF image data, so this class takes a copy (or moved reference)
      * @param data
      */
     explicit Vtf(std::shared_ptr<std::vector<std::byte>> data);
