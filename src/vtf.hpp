@@ -1,6 +1,5 @@
 #pragma once
 
-#include "colours.hpp"
 #include "file-format-objects/header.hpp"
 #include <cstdint>
 #include <memory>

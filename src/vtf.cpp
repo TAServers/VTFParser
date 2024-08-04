@@ -1,5 +1,5 @@
 #include "vtf.hpp"
-#include "helpers/offset-data-view.hpp"
+#include "helpers/check-bounds.hpp"
 #include <cstring>
 #include <utility>
 
@@ -142,7 +142,8 @@ namespace VtfParser {
   }
 
   Vtf::Vtf(std::shared_ptr<std::vector<std::byte>> _data) : data(std::move(_data)) {
-    header = OffsetDataView(data).parseStruct<Header>(0, "Failed to parse VTF header");
+    checkBounds(0, sizeof(Header), data->size(), "Failed to parse VTF header");
+    header = *reinterpret_cast<const Header*>(data->data());
 
     if (memcmp(header.signature.data(), FILE_ID.data(), 4) != 0) {
       throw InvalidHeader("VTF header has an invalid file ID");
