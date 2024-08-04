@@ -1,0 +1,281 @@
+#include "vtf.hpp"
+#include "helpers/offset-data-view.hpp"
+#include <cstring>
+#include <utility>
+
+namespace VtfParser {
+  using namespace Errors;
+
+  namespace {
+    constexpr std::array<char, 4> FILE_ID = {'V', 'T', 'F', 0};
+
+    constexpr uint32_t SUPPORTED_MAJOR_VERSION = 7;
+    constexpr uint32_t MIN_SUPPORTED_MINOR_VERSION = 0;
+    constexpr uint32_t MAX_SUPPORTED_MINOR_VERSION = 5;
+
+    /**
+     * First minor version with resource infos.
+     */
+    constexpr uint32_t MIN_RESOURCE_INFO_MINOR_VERSION = 3;
+
+    constexpr std::array<uint8_t, 3> LOW_RES_RESOURCE_TAG = {0x01, 0, 0};
+    constexpr std::array<uint8_t, 3> HIGH_RES_RESOURCE_TAG = {0x30, 0, 0};
+
+    struct SliceSizeInfo {
+      ImageFormat format;
+      size_t width;
+      size_t height;
+    };
+
+    struct FaceSizeInfo : public SliceSizeInfo {
+      ImageFormat format;
+      size_t width;
+      size_t height;
+      size_t depth;
+    };
+
+    struct FrameSizeInfo : public FaceSizeInfo {
+      ImageFormat format;
+      size_t width;
+      size_t height;
+      size_t depth;
+      size_t faces;
+    };
+
+    struct MipSizeInfo : public FrameSizeInfo {
+      ImageFormat format;
+      size_t width;
+      size_t height;
+      size_t depth;
+      size_t faces;
+      size_t frames;
+    };
+
+    struct ImageSizeInfo : public MipSizeInfo {
+      ImageFormat format;
+      size_t width;
+      size_t height;
+      size_t depth;
+      size_t faces;
+      size_t frames;
+      uint8_t mipLevels;
+    };
+
+    /**
+     * Returns the number of bytes used by each pixel of the given format.
+     * @remark Only works with uncompressed formats.
+     * @param format
+     * @return Size of each pixel in bytes.
+     */
+    size_t getPixelSizeBytes(ImageFormat format) {
+      switch (format) {
+        case ImageFormat::RGBA16161616F:
+        case ImageFormat::RGBA16161616:
+          return 8;
+        case ImageFormat::RGBA8888:
+        case ImageFormat::ABGR8888:
+        case ImageFormat::ARGB8888:
+        case ImageFormat::BGRA8888:
+        case ImageFormat::BGRX8888:
+        case ImageFormat::UVWQ8888:
+        case ImageFormat::UVLX8888:
+          return 4;
+        case ImageFormat::RGB888:
+        case ImageFormat::BGR888:
+        case ImageFormat::RGB888_BLUESCREEN:
+        case ImageFormat::BGR888_BLUESCREEN:
+          return 3;
+        case ImageFormat::RGB565:
+        case ImageFormat::IA88:
+        case ImageFormat::BGR565:
+        case ImageFormat::BGRX5551:
+        case ImageFormat::BGRA4444:
+        case ImageFormat::BGRA5551:
+        case ImageFormat::UV88:
+          return 2;
+        case ImageFormat::I8:
+        case ImageFormat::P8:
+        case ImageFormat::A8:
+          return 1;
+        default:
+          throw InvalidHeader("Unrecognised image format");
+      }
+    }
+
+    size_t getSliceSizeBytes(const SliceSizeInfo& sizeInfo) {
+      switch (sizeInfo.format) {
+        case ImageFormat::DXT1:
+        case ImageFormat::DXT1_ONEBITALPHA:
+          return ((sizeInfo.width + 3u) >> 2u) * ((sizeInfo.height + 3u) >> 2u) * 8u;
+        case ImageFormat::DXT3:
+        case ImageFormat::DXT5:
+          return ((sizeInfo.width + 3u) >> 2u) * ((sizeInfo.height + 3u) >> 2u) * 16u;
+        default:
+          return sizeInfo.width * sizeInfo.height * getPixelSizeBytes(sizeInfo.format);
+      }
+    }
+
+    size_t getFaceSizeBytes(const FaceSizeInfo& sizeInfo) {
+      return getSliceSizeBytes(sizeInfo) * sizeInfo.depth;
+    }
+
+    size_t getFrameSizeBytes(const FrameSizeInfo& sizeInfo) {
+      return getFaceSizeBytes(sizeInfo) * sizeInfo.faces;
+    }
+
+    size_t getMipSizeBytes(const MipSizeInfo& sizeInfo) {
+      return getFrameSizeBytes(sizeInfo) * sizeInfo.frames;
+    }
+
+    size_t getImageSizeBytes(const ImageSizeInfo& sizeInfo) {
+      size_t size = 0;
+      for (uint8_t mipLevel = 0; mipLevel < sizeInfo.mipLevels; mipLevel++) {
+        MipSizeInfo mipSizeInfo = sizeInfo; // NOLINT(*-slicing)
+        mipSizeInfo.width = std::max(sizeInfo.width >> mipLevel, 1ul);
+        mipSizeInfo.height = std::max(sizeInfo.height >> mipLevel, 1ul);
+        mipSizeInfo.depth = std::max(sizeInfo.depth >> mipLevel, 1ul);
+        size += getMipSizeBytes(mipSizeInfo);
+      }
+
+      return size;
+    }
+  }
+
+  Vtf::Vtf(std::shared_ptr<std::vector<std::byte>> _data) : data(std::move(_data)) {
+    header = OffsetDataView(data).parseStruct<Header>(0, "Failed to parse VTF header");
+
+    if (memcmp(header.signature.data(), FILE_ID.data(), 4) != 0) {
+      throw InvalidHeader("VTF header has an invalid file ID");
+    }
+    if (header.version[0] != SUPPORTED_MAJOR_VERSION || header.version[1] < MIN_SUPPORTED_MINOR_VERSION ||
+        header.version[1] > MAX_SUPPORTED_MINOR_VERSION) {
+      throw UnsupportedVersion("VTF version is not supported");
+    }
+    if (header.highResImageFormat == ImageFormat::NONE) {
+      throw InvalidHeader("VTF high res image format is NONE");
+    }
+    if (header.numResources > Header::MAX_RESOURCES) {
+      throw InvalidHeader("VTF resource count is higher than maximum allowed");
+    }
+
+    if (header.version[1] < 2) {
+      header.depth = 1;
+    }
+
+    const auto lowResImageDataSize = getImageSizeBytes(ImageSizeInfo{
+      .format = header.lowResImageFormat,
+      .width = header.lowResImageWidth,
+      .height = header.lowResImageHeight,
+      .depth = 1,
+      .faces = 1,
+      .frames = 1,
+      .mipLevels = 1,
+    });
+    const auto highResImageDataSize = getImageSizeBytes({
+      .format = header.highResImageFormat,
+      .width = header.width,
+      .height = header.height,
+      .depth = header.depth,
+      .faces = getFaces(),
+      .frames = header.frames,
+      .mipLevels = header.mipmapCount,
+    });
+
+    const std::span<const std::byte> dataView(*data);
+    if (header.version[1] >= MIN_RESOURCE_INFO_MINOR_VERSION) {
+      for (const auto& resourceInfo : std::span(header.resourceInfos).subspan(0, header.numResources)) {
+        if (resourceInfo.tag == LOW_RES_RESOURCE_TAG) {
+          lowResImageData = dataView.subspan(resourceInfo.data, lowResImageDataSize);
+        } else if (resourceInfo.tag == HIGH_RES_RESOURCE_TAG) {
+          highResImageData = dataView.subspan(resourceInfo.data, highResImageDataSize);
+        }
+      }
+    } else {
+      header.numResources = 0;
+      lowResImageData = dataView.subspan(sizeof(Header), lowResImageDataSize);
+      highResImageData = dataView.subspan(sizeof(Header) + lowResImageDataSize, highResImageDataSize);
+    }
+  }
+
+  ImageFormat Vtf::getHighResImageFormat() const {
+    return header.highResImageFormat;
+  }
+
+  Vtf::HighResImageExtent Vtf::getHighResImageExtent(uint8_t mipLevel) const {
+    return {
+      .width = std::max<uint16_t>(header.width >> mipLevel, 1),
+      .height = std::max<uint16_t>(header.height >> mipLevel, 1),
+      .depth = std::max<uint16_t>(header.depth >> mipLevel, 1),
+    };
+  }
+
+  uint8_t Vtf::getFaces() const {
+    if ((header.flags & TextureFlags::ENVMAP) == TextureFlags::NONE) {
+      return 1;
+    }
+
+    return header.firstFrame == 0xffff && header.version[1] < 5 ? 7 : 6;
+  }
+
+  uint8_t Vtf::getMipLevels() const {
+    return header.mipmapCount;
+  }
+
+  uint16_t Vtf::getFrames() const {
+    return header.frames;
+  }
+
+  uint16_t Vtf::getFirstFrame() const {
+    return header.firstFrame;
+  }
+
+  std::span<const std::byte> Vtf::getHighResImageData() const {
+    return highResImageData;
+  }
+
+  size_t Vtf::getImageSliceOffset(
+    const uint8_t mipLevel, const uint16_t frame, const uint8_t face, const uint16_t depth
+  ) const {
+    const HighResImageExtent targetExtent = getHighResImageExtent(mipLevel);
+    const MipSizeInfo targetMipSize = {
+      .format = getHighResImageFormat(),
+      .width = targetExtent.width,
+      .height = targetExtent.height,
+      .depth = targetExtent.depth,
+      .faces = getFaces(),
+      .frames = getFrames()
+    };
+
+    size_t offset = 0;
+    for (uint8_t i = mipLevel + 1; i < getMipLevels(); i++) {
+      const HighResImageExtent mipExtent = getHighResImageExtent(i);
+      MipSizeInfo mipSize = targetMipSize;
+      mipSize.width = mipExtent.width;
+      mipSize.height = mipExtent.height;
+      mipSize.depth = mipExtent.depth;
+
+      offset += getMipSizeBytes(mipSize);
+    }
+
+    offset += getFrameSizeBytes(targetMipSize) * frame;
+    offset += getFaceSizeBytes(targetMipSize) * face;
+    offset += getSliceSizeBytes(targetMipSize) * depth;
+
+    return offset;
+  }
+
+  ImageFormat Vtf::getLowResImageFormat() const {
+    return header.lowResImageFormat;
+  }
+
+  Vtf::LowResImageExtent Vtf::getLowResImageExtent() const {
+    return {
+      .width = header.lowResImageWidth,
+      .height = header.lowResImageHeight,
+    };
+  }
+
+  std::span<const std::byte> Vtf::getLowResImageData() const {
+    return lowResImageData;
+  }
+}
