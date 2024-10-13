@@ -88,7 +88,7 @@ namespace VtfParser {
 
     /**
      * Gets the high resolution image data.
-     * @return View over the high res data.
+     * @return View over the high-res data.
      */
     [[nodiscard]] std::span<const std::byte> getHighResImageData() const;
 
