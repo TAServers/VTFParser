@@ -148,19 +148,25 @@ namespace VtfParser {
     if (memcmp(header.signature.data(), FILE_ID.data(), 4) != 0) {
       throw InvalidHeader("VTF header has an invalid file ID");
     }
-    if (header.version[0] != SUPPORTED_MAJOR_VERSION || header.version[1] < MIN_SUPPORTED_MINOR_VERSION ||
-        header.version[1] > MAX_SUPPORTED_MINOR_VERSION) {
+
+    if (header.version[0] != SUPPORTED_MAJOR_VERSION || header.version[1] < MIN_SUPPORTED_MINOR_VERSION || header.version[1] > MAX_SUPPORTED_MINOR_VERSION) {
       throw UnsupportedVersion("VTF version is not supported");
     }
+
+    // Fix-up for old versions of the format, which put garbage data here
+    if (header.version[1] < 2) {
+      header.depth = 1;
+    }
+    if (header.version[1] < 3) {
+      header.numResources = 0;
+    }
+
     if (header.highResImageFormat == ImageFormat::NONE) {
       throw InvalidHeader("VTF high res image format is NONE");
     }
+
     if (header.numResources > Header::MAX_RESOURCES) {
       throw InvalidHeader("VTF resource count is higher than maximum allowed");
-    }
-
-    if (header.version[1] < 2) {
-      header.depth = 1;
     }
 
     const auto lowResImageDataSize = getImageSizeBytes(ImageSizeInfo{
