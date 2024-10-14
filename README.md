@@ -17,7 +17,7 @@ See also: https://github.com/TAServers/BSPParser and https://github.com/TAServer
 
 The following minimal example shows how you can parse and access the VTF high-res image data:
 
-```c++
+```cpp
 #include "VTFParser.hpp"
 
 // Load from a file on disk, an API, or somewhere in memory
