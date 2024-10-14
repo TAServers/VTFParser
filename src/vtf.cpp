@@ -21,37 +21,7 @@ namespace VtfParser {
     constexpr std::array<uint8_t, 3> LOW_RES_RESOURCE_TAG = {0x01, 0, 0};
     constexpr std::array<uint8_t, 3> HIGH_RES_RESOURCE_TAG = {0x30, 0, 0};
 
-    struct SliceSizeInfo {
-      ImageFormat format;
-      size_t width;
-      size_t height;
-    };
-
-    struct FaceSizeInfo : public SliceSizeInfo {
-      ImageFormat format;
-      size_t width;
-      size_t height;
-      size_t depth;
-    };
-
-    struct FrameSizeInfo : public FaceSizeInfo {
-      ImageFormat format;
-      size_t width;
-      size_t height;
-      size_t depth;
-      size_t faces;
-    };
-
-    struct MipSizeInfo : public FrameSizeInfo {
-      ImageFormat format;
-      size_t width;
-      size_t height;
-      size_t depth;
-      size_t faces;
-      size_t frames;
-    };
-
-    struct ImageSizeInfo : public MipSizeInfo {
+    struct ImageSizeInfo {
       ImageFormat format;
       size_t width;
       size_t height;
@@ -102,7 +72,7 @@ namespace VtfParser {
       }
     }
 
-    size_t getSliceSizeBytes(const SliceSizeInfo& sizeInfo) {
+    size_t getSliceSizeBytes(const ImageSizeInfo& sizeInfo) {
       switch (sizeInfo.format) {
         case ImageFormat::DXT1:
         case ImageFormat::DXT1_ONEBITALPHA:
@@ -115,22 +85,22 @@ namespace VtfParser {
       }
     }
 
-    size_t getFaceSizeBytes(const FaceSizeInfo& sizeInfo) {
+    size_t getFaceSizeBytes(const ImageSizeInfo& sizeInfo) {
       return getSliceSizeBytes(sizeInfo) * sizeInfo.depth;
     }
 
-    size_t getFrameSizeBytes(const FrameSizeInfo& sizeInfo) {
+    size_t getFrameSizeBytes(const ImageSizeInfo& sizeInfo) {
       return getFaceSizeBytes(sizeInfo) * sizeInfo.faces;
     }
 
-    size_t getMipSizeBytes(const MipSizeInfo& sizeInfo) {
+    size_t getMipSizeBytes(const ImageSizeInfo& sizeInfo) {
       return getFrameSizeBytes(sizeInfo) * sizeInfo.frames;
     }
 
-    size_t getImageSizeBytes(const ImageSizeInfo& sizeInfo) {
+    size_t getImageSizeBytes(ImageSizeInfo sizeInfo) {
       size_t size = 0;
       for (uint8_t mipLevel = 0; mipLevel < sizeInfo.mipLevels; mipLevel++) {
-        MipSizeInfo mipSizeInfo = sizeInfo; // NOLINT(*-slicing)
+        ImageSizeInfo mipSizeInfo = sizeInfo;
         mipSizeInfo.width = std::max(sizeInfo.width >> mipLevel, 1ul);
         mipSizeInfo.height = std::max(sizeInfo.height >> mipLevel, 1ul);
         mipSizeInfo.depth = std::max(sizeInfo.depth >> mipLevel, 1ul);
@@ -244,19 +214,20 @@ namespace VtfParser {
     const uint8_t mipLevel, const uint16_t frame, const uint8_t face, const uint16_t depth
   ) const {
     const HighResImageExtent targetExtent = getHighResImageExtent(mipLevel);
-    const MipSizeInfo targetMipSize = {
+    const ImageSizeInfo targetMipSize = {
       .format = getHighResImageFormat(),
       .width = targetExtent.width,
       .height = targetExtent.height,
       .depth = targetExtent.depth,
       .faces = getFaces(),
-      .frames = getFrames()
+      .frames = getFrames(),
+      .mipLevels = getMipLevels(),
     };
 
     size_t offset = 0;
-    for (uint8_t i = mipLevel + 1; i < getMipLevels(); i++) {
+    for (uint8_t i = mipLevel + 1; i < targetMipSize.mipLevels; i++) {
       const HighResImageExtent mipExtent = getHighResImageExtent(i);
-      MipSizeInfo mipSize = targetMipSize;
+      ImageSizeInfo mipSize = targetMipSize;
       mipSize.width = mipExtent.width;
       mipSize.height = mipExtent.height;
       mipSize.depth = mipExtent.depth;
