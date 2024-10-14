@@ -127,7 +127,7 @@ namespace VtfParser {
     if (header.version[1] < 2) {
       header.depth = 1;
     }
-    if (header.version[1] < 3) {
+    if (header.version[1] < MIN_RESOURCE_INFO_MINOR_VERSION) {
       header.numResources = 0;
     }
 
@@ -168,7 +168,6 @@ namespace VtfParser {
         }
       }
     } else {
-      header.numResources = 0;
       lowResImageData = dataView.subspan(sizeof(Header), lowResImageDataSize);
       highResImageData = dataView.subspan(sizeof(Header) + lowResImageDataSize, highResImageDataSize);
     }
