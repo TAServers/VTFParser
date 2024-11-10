@@ -87,6 +87,12 @@ namespace VtfParser {
     [[nodiscard]] uint16_t getFirstFrame() const;
 
     /**
+     * Gets the flags set on the texture.
+     * @return TextureFlags packed together as a bitflag.
+     */
+    [[nodiscard]] TextureFlags getFlags() const;
+
+    /**
      * Gets the high resolution image data.
      * @return View over the high-res data.
      */

@@ -101,9 +101,9 @@ namespace VtfParser {
       size_t size = 0;
       for (uint8_t mipLevel = 0; mipLevel < sizeInfo.mipLevels; mipLevel++) {
         ImageSizeInfo mipSizeInfo = sizeInfo;
-        mipSizeInfo.width = std::max(sizeInfo.width >> mipLevel, 1ull);
-        mipSizeInfo.height = std::max(sizeInfo.height >> mipLevel, 1ull);
-        mipSizeInfo.depth = std::max(sizeInfo.depth >> mipLevel, 1ull);
+        mipSizeInfo.width = std::max<size_t>(sizeInfo.width >> mipLevel, 1ul);
+        mipSizeInfo.height = std::max<size_t>(sizeInfo.height >> mipLevel, 1ul);
+        mipSizeInfo.depth = std::max<size_t>(sizeInfo.depth >> mipLevel, 1ul);
         size += getMipSizeBytes(mipSizeInfo);
       }
 
@@ -203,6 +203,10 @@ namespace VtfParser {
 
   uint16_t Vtf::getFirstFrame() const {
     return header.firstFrame;
+  }
+
+  TextureFlags Vtf::getFlags() const {
+    return header.flags;
   }
 
   std::span<const std::byte> Vtf::getHighResImageData() const {
