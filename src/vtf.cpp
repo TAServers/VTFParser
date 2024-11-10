@@ -176,8 +176,8 @@ namespace VtfParser {
         }
       }
     } else {
-      lowResImageData = dataView.subspan(sizeof(Header), lowResImageDataSize);
-      highResImageData = dataView.subspan(sizeof(Header) + lowResImageDataSize, highResImageDataSize);
+      lowResImageData = dataView.subspan(header.headerSize, lowResImageDataSize);
+      highResImageData = dataView.subspan(header.headerSize + lowResImageDataSize, highResImageDataSize);
     }
   }
 
