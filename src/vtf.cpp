@@ -75,11 +75,19 @@ namespace VtfParser {
     size_t getSliceSizeBytes(const ImageSizeInfo& sizeInfo) {
       switch (sizeInfo.format) {
         case ImageFormat::DXT1:
-        case ImageFormat::DXT1_ONEBITALPHA:
-          return ((sizeInfo.width + 3u) >> 2u) * ((sizeInfo.height + 3u) >> 2u) * 8u;
+        case ImageFormat::DXT1_ONEBITALPHA: {
+          const auto width = std::max<size_t>(sizeInfo.width, 4);
+          const auto height = std::max<size_t>(sizeInfo.height, 4);
+
+          return ((width + 3u) >> 2u) * ((height + 3u) >> 2u) * 8u;
+        }
         case ImageFormat::DXT3:
-        case ImageFormat::DXT5:
-          return ((sizeInfo.width + 3u) >> 2u) * ((sizeInfo.height + 3u) >> 2u) * 16u;
+        case ImageFormat::DXT5: {
+          const auto width = std::max<size_t>(sizeInfo.width, 4);
+          const auto height = std::max<size_t>(sizeInfo.height, 4);
+
+          return ((width + 3u) >> 2u) * ((height + 3u) >> 2u) * 16u;
+        }
         default:
           return sizeInfo.width * sizeInfo.height * getPixelSizeBytes(sizeInfo.format);
       }
@@ -168,8 +176,8 @@ namespace VtfParser {
         }
       }
     } else {
-      lowResImageData = dataView.subspan(sizeof(Header), lowResImageDataSize);
-      highResImageData = dataView.subspan(sizeof(Header) + lowResImageDataSize, highResImageDataSize);
+      lowResImageData = dataView.subspan(header.headerSize, lowResImageDataSize);
+      highResImageData = dataView.subspan(header.headerSize + lowResImageDataSize, highResImageDataSize);
     }
   }
 
