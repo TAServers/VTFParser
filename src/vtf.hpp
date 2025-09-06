@@ -1,10 +1,9 @@
 #pragma once
 
-#include "file-format-objects/header.hpp"
 #include <cstdint>
 #include <memory>
 #include <span>
-#include <vector>
+#include "file-format-objects/header.hpp"
 
 namespace VtfParser {
   /**
@@ -46,9 +45,10 @@ namespace VtfParser {
 
     /**
      * Loads the VTF given by the binary data into an easily accessible structure.
+     * Does not take ownership of the data.
      * @param data
      */
-    explicit Vtf(std::shared_ptr<std::vector<std::byte>> data);
+    explicit Vtf(std::span<const std::byte> data);
 
     /**
      * Gets the format of the high resolution image data.
@@ -109,7 +109,10 @@ namespace VtfParser {
      * @return Offset (in bytes) into the data returned by getHighResImageData().
      */
     [[nodiscard]] size_t getImageSliceOffset(
-      const uint8_t mipLevel = 0, const uint16_t frame = 0, const uint8_t face = 0, const uint16_t depth = 0
+      uint8_t mipLevel = 0,
+      uint16_t frame = 0,
+      uint8_t face = 0,
+      uint16_t depth = 0
     ) const;
 
     /**
@@ -133,9 +136,8 @@ namespace VtfParser {
     [[nodiscard]] std::span<const std::byte> getLowResImageData() const;
 
   private:
-    Header header;
+    Header header{};
 
-    std::shared_ptr<std::vector<std::byte>> data;
     std::span<const std::byte> highResImageData;
     std::span<const std::byte> lowResImageData;
   };
