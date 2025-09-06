@@ -1,13 +1,13 @@
 #include "vtf.hpp"
-#include "helpers/check-bounds.hpp"
 #include <cstring>
 #include <utility>
+#include "helpers/check-bounds.hpp"
 
 namespace VtfParser {
   using namespace Errors;
 
   namespace {
-    constexpr std::array<char, 4> FILE_ID = {'V', 'T', 'F', 0};
+    constexpr std::array<char, 4> FILE_ID = { 'V', 'T', 'F', 0 };
 
     constexpr uint32_t SUPPORTED_MAJOR_VERSION = 7;
     constexpr uint32_t MIN_SUPPORTED_MINOR_VERSION = 0;
@@ -18,8 +18,8 @@ namespace VtfParser {
      */
     constexpr uint32_t MIN_RESOURCE_INFO_MINOR_VERSION = 3;
 
-    constexpr std::array<uint8_t, 3> LOW_RES_RESOURCE_TAG = {0x01, 0, 0};
-    constexpr std::array<uint8_t, 3> HIGH_RES_RESOURCE_TAG = {0x30, 0, 0};
+    constexpr std::array<uint8_t, 3> LOW_RES_RESOURCE_TAG = { 0x01, 0, 0 };
+    constexpr std::array<uint8_t, 3> HIGH_RES_RESOURCE_TAG = { 0x30, 0, 0 };
 
     struct ImageSizeInfo {
       ImageFormat format;
@@ -37,7 +37,7 @@ namespace VtfParser {
      * @param format
      * @return Size of each pixel in bytes.
      */
-    size_t getPixelSizeBytes(ImageFormat format) {
+    size_t getPixelSizeBytes(const ImageFormat format) {
       switch (format) {
         case ImageFormat::RGBA16161616F:
         case ImageFormat::RGBA16161616:
@@ -105,10 +105,10 @@ namespace VtfParser {
       return getFrameSizeBytes(sizeInfo) * sizeInfo.frames;
     }
 
-    size_t getImageSizeBytes(ImageSizeInfo sizeInfo) {
+    size_t getImageSizeBytes(const ImageSizeInfo& sizeInfo) {
       size_t size = 0;
       for (uint8_t mipLevel = 0; mipLevel < sizeInfo.mipLevels; mipLevel++) {
-        ImageSizeInfo mipSizeInfo = sizeInfo;
+        auto mipSizeInfo = sizeInfo;
         mipSizeInfo.width = std::max<size_t>(sizeInfo.width >> mipLevel, 1ul);
         mipSizeInfo.height = std::max<size_t>(sizeInfo.height >> mipLevel, 1ul);
         mipSizeInfo.depth = std::max<size_t>(sizeInfo.depth >> mipLevel, 1ul);
@@ -119,15 +119,16 @@ namespace VtfParser {
     }
   }
 
-  Vtf::Vtf(std::shared_ptr<std::vector<std::byte>> _data) : data(std::move(_data)) {
-    checkBounds(0, sizeof(Header), data->size(), "Failed to parse VTF header");
-    header = *reinterpret_cast<const Header*>(data->data());
+  Vtf::Vtf(const std::span<const std::byte> data) {
+    checkBounds(0, sizeof(Header), data.size(), "Failed to parse VTF header");
+    header = *reinterpret_cast<const Header*>(data.data());
 
     if (memcmp(header.signature.data(), FILE_ID.data(), 4) != 0) {
       throw InvalidHeader("VTF header has an invalid file ID");
     }
 
-    if (header.version[0] != SUPPORTED_MAJOR_VERSION || header.version[1] < MIN_SUPPORTED_MINOR_VERSION || header.version[1] > MAX_SUPPORTED_MINOR_VERSION) {
+    if (header.version[0] != SUPPORTED_MAJOR_VERSION || header.version[1] < MIN_SUPPORTED_MINOR_VERSION || header.
+      version[1] > MAX_SUPPORTED_MINOR_VERSION) {
       throw UnsupportedVersion("VTF version is not supported");
     }
 
@@ -147,37 +148,40 @@ namespace VtfParser {
       throw InvalidHeader("VTF resource count is higher than maximum allowed");
     }
 
-    const auto lowResImageDataSize = getImageSizeBytes(ImageSizeInfo{
-      .format = header.lowResImageFormat,
-      .width = header.lowResImageWidth,
-      .height = header.lowResImageHeight,
-      .depth = 1,
-      .faces = 1,
-      .frames = 1,
-      .mipLevels = 1,
-    });
-    const auto highResImageDataSize = getImageSizeBytes({
-      .format = header.highResImageFormat,
-      .width = header.width,
-      .height = header.height,
-      .depth = header.depth,
-      .faces = getFaces(),
-      .frames = header.frames,
-      .mipLevels = header.mipmapCount,
-    });
+    const auto lowResImageDataSize = getImageSizeBytes(
+      ImageSizeInfo{
+        .format = header.lowResImageFormat,
+        .width = header.lowResImageWidth,
+        .height = header.lowResImageHeight,
+        .depth = 1,
+        .faces = 1,
+        .frames = 1,
+        .mipLevels = 1,
+      }
+    );
+    const auto highResImageDataSize = getImageSizeBytes(
+      {
+        .format = header.highResImageFormat,
+        .width = header.width,
+        .height = header.height,
+        .depth = header.depth,
+        .faces = getFaces(),
+        .frames = header.frames,
+        .mipLevels = header.mipmapCount,
+      }
+    );
 
-    const std::span<const std::byte> dataView(*data);
     if (header.version[1] >= MIN_RESOURCE_INFO_MINOR_VERSION) {
       for (const auto& resourceInfo : std::span(header.resourceInfos).subspan(0, header.numResources)) {
         if (resourceInfo.tag == LOW_RES_RESOURCE_TAG) {
-          lowResImageData = dataView.subspan(resourceInfo.data, lowResImageDataSize);
+          lowResImageData = data.subspan(resourceInfo.data, lowResImageDataSize);
         } else if (resourceInfo.tag == HIGH_RES_RESOURCE_TAG) {
-          highResImageData = dataView.subspan(resourceInfo.data, highResImageDataSize);
+          highResImageData = data.subspan(resourceInfo.data, highResImageDataSize);
         }
       }
     } else {
-      lowResImageData = dataView.subspan(header.headerSize, lowResImageDataSize);
-      highResImageData = dataView.subspan(header.headerSize + lowResImageDataSize, highResImageDataSize);
+      lowResImageData = data.subspan(header.headerSize, lowResImageDataSize);
+      highResImageData = data.subspan(header.headerSize + lowResImageDataSize, highResImageDataSize);
     }
   }
 
@@ -185,7 +189,7 @@ namespace VtfParser {
     return header.highResImageFormat;
   }
 
-  Vtf::HighResImageExtent Vtf::getHighResImageExtent(uint8_t mipLevel) const {
+  Vtf::HighResImageExtent Vtf::getHighResImageExtent(const uint8_t mipLevel) const {
     return {
       .width = std::max<uint16_t>(header.width >> mipLevel, 1),
       .height = std::max<uint16_t>(header.height >> mipLevel, 1),
@@ -222,9 +226,12 @@ namespace VtfParser {
   }
 
   size_t Vtf::getImageSliceOffset(
-    const uint8_t mipLevel, const uint16_t frame, const uint8_t face, const uint16_t depth
+    const uint8_t mipLevel,
+    const uint16_t frame,
+    const uint8_t face,
+    const uint16_t depth
   ) const {
-    const HighResImageExtent targetExtent = getHighResImageExtent(mipLevel);
+    const auto targetExtent = getHighResImageExtent(mipLevel);
     const ImageSizeInfo targetMipSize = {
       .format = getHighResImageFormat(),
       .width = targetExtent.width,
@@ -237,8 +244,8 @@ namespace VtfParser {
 
     size_t offset = 0;
     for (uint8_t i = mipLevel + 1; i < targetMipSize.mipLevels; i++) {
-      const HighResImageExtent mipExtent = getHighResImageExtent(i);
-      ImageSizeInfo mipSize = targetMipSize;
+      const auto mipExtent = getHighResImageExtent(i);
+      auto mipSize = targetMipSize;
       mipSize.width = mipExtent.width;
       mipSize.height = mipExtent.height;
       mipSize.depth = mipExtent.depth;
